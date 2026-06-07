@@ -8,7 +8,7 @@
     },
     {
       "file": "The_blood_cancer_that_became_solvable_-_Works_in_Progress_Magazine.htm",
-      "url": "https://worksinprogress.co/x",
+      "url": "https://worksinprogress.co/issue/the-blood-cancer-that-became-solvable/",
       "images": 8,
       "requireAssets": [
         "originaltheoryor00wrig"
@@ -19,28 +19,38 @@
     },
     {
       "file": "A_Fiery_Visitor_From_Space_Photo-Bombs_an_Erupting_Volcano_-_The_New_York_Times.htm",
-      "url": "https://www.nytimes.com/x",
+      "url": "https://www.nytimes.com/2026/05/26/science/volcano-eruption-fireball-philippines.html",
       "images": 1
     },
     {
       "file": "The_25_Most_Interesting_Ideas_I_ve_Found_in_2025__So_Far_.htm",
-      "url": "https://www.derekthompson.org/x",
+      "url": "https://www.derekthompson.org/p/the-25-most-interesting-ideas-ive",
       "images": 32
     },
     {
       "file": "Why_people_fail_at_learning_languages_-_by_Colin_Gorrie.htm",
-      "url": "https://www.colingorrie.com/x",
+      "url": "https://www.deadlanguagesociety.com/p/why-people-fail-at-learning-languages",
       "images": 2
     },
     {
       "file": "Het_woonprobleem_van_Nederland__iedereen_wil_betaalbaar_wonen__maar_niemand_wil_het_betalen_-_De_Correspondent.htm",
-      "url": "https://decorrespondent.nl/x",
+      "url": "https://decorrespondent.nl/16290/het-woonprobleem-van-nederland-iedereen-wil-betaalbaar-wonen-maar-niemand-wil-het-betalen/820bf2ae-d15e-06ab-0be6-e4fd58db6624",
       "images": 12
     },
     {
       "file": "Failing_grades_soar_as_professors_see_greater_AI_usage__dwindling_math_skills_in_UC_Berkeley_computer_science_classes___Academics___dailycal_org.htm",
-      "url": "https://dailycal.org/x",
+      "url": "https://www.dailycal.org/news/campus/academics/failing-grades-soar-as-professors-see-greater-ai-usage-dwindling-math-skills-in-uc-berkeley/article_16fad0bf-02cb-4b8c-8d88-888ffd9f8608.html",
       "images": 2
-    }
+    },
+	{
+	  "file": "Hoe_wordt_een_stad_van_18_miljoen_inwoners_in_2040_klimaatneutraal.htm",
+	  "url": "https://www.nrc.nl/nieuws/2026/06/05/hoe-wordt-een-stad-van-18-miljoen-inwoners-in-2040-klimaatneutraal-a4922077",
+	  "images": 3
+	},
+	{
+	  "file": "Vergeten_stukje_grond_stelt_gemeente_voor_enorme_puzzel_meer_dan_honderd_erfgenamen.htm",
+	  "url": "https://www.rijnmond.nl/nieuws/2203278/vergeten-stukje-grond-stelt-gemeente-voor-enorme-puzzel-meer-dan-honderd-erfgenamen",
+	  "images": 11
+	}
   ]
 }
