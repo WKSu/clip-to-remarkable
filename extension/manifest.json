@@ -37,10 +37,10 @@
     "https://*/*"
   ],
   "action": {
-    "default_title": "Clip this article to EPUB"
+    "default_title": "Clip this article to EPUB and Remarkable"
   },
   "icons": {
-    "48": "icons/48.png",
-    "96": "icons/96.png"
+    "48": "icons/icon.svg",
+    "96": "icons/icon.svg"
   }
 }

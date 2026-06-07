@@ -2,12 +2,12 @@
   "_comment": "Ground-truth expected image counts per article. Drop the matching .htm file into test/fixtures/ (gitignored to avoid redistributing copyrighted article HTML) and run `npm test`. Add entries here to extend the suite.",
   "cases": [
     {
-      "file": "India_s_surprise_baby_bust_is_a_warning_to_the_world.htm",
+      "file": "India’s surprise baby bust is a warning to the world.htm",
       "url": "https://www.economist.com/leaders/2026/06/04/indias-surprise-baby-bust-is-a-warning-to-the-world",
       "images": 1
     },
     {
-      "file": "The_blood_cancer_that_became_solvable_-_Works_in_Progress_Magazine.htm",
+      "file": "The blood cancer that became solvable - Works in Progress Magazine.htm",
       "url": "https://worksinprogress.co/issue/the-blood-cancer-that-became-solvable/",
       "images": 8,
       "requireAssets": [
@@ -18,27 +18,27 @@
       ]
     },
     {
-      "file": "A_Fiery_Visitor_From_Space_Photo-Bombs_an_Erupting_Volcano_-_The_New_York_Times.htm",
+      "file": "A Fiery Visitor From Space Photo-Bombs an Erupting Volcano - The New York Times.htm",
       "url": "https://www.nytimes.com/2026/05/26/science/volcano-eruption-fireball-philippines.html",
       "images": 1
     },
     {
-      "file": "The_25_Most_Interesting_Ideas_I_ve_Found_in_2025__So_Far_.htm",
+      "file": "The 25 Most Interesting Ideas I've Found in 2025 (So Far).htm",
       "url": "https://www.derekthompson.org/p/the-25-most-interesting-ideas-ive",
       "images": 32
     },
     {
-      "file": "Why_people_fail_at_learning_languages_-_by_Colin_Gorrie.htm",
+      "file": "Why people fail at learning languages - by Colin Gorrie.htm",
       "url": "https://www.deadlanguagesociety.com/p/why-people-fail-at-learning-languages",
       "images": 2
     },
     {
-      "file": "Het_woonprobleem_van_Nederland__iedereen_wil_betaalbaar_wonen__maar_niemand_wil_het_betalen_-_De_Correspondent.htm",
+      "file": "Het woonprobleem van Nederland_ iedereen wil betaalbaar wonen, maar niemand wil het betalen - De Correspondent.htm",
       "url": "https://decorrespondent.nl/16290/het-woonprobleem-van-nederland-iedereen-wil-betaalbaar-wonen-maar-niemand-wil-het-betalen/820bf2ae-d15e-06ab-0be6-e4fd58db6624",
       "images": 12
     },
     {
-      "file": "Failing_grades_soar_as_professors_see_greater_AI_usage__dwindling_math_skills_in_UC_Berkeley_computer_science_classes___Academics___dailycal_org.htm",
+      "file": "Failing grades soar as professors see greater AI usage, dwindling math skills in UC Berkeley computer science classes _ Academics _ dailycal.org.htm",
       "url": "https://www.dailycal.org/news/campus/academics/failing-grades-soar-as-professors-see-greater-ai-usage-dwindling-math-skills-in-uc-berkeley/article_16fad0bf-02cb-4b8c-8d88-888ffd9f8608.html",
       "images": 2
     },
@@ -51,6 +51,21 @@
 	  "file": "Vergeten_stukje_grond_stelt_gemeente_voor_enorme_puzzel_meer_dan_honderd_erfgenamen.htm",
 	  "url": "https://www.rijnmond.nl/nieuws/2203278/vergeten-stukje-grond-stelt-gemeente-voor-enorme-puzzel-meer-dan-honderd-erfgenamen",
 	  "images": 11
+	},
+	{
+	  "file": "Can Liverpool’s squad play Andoni Iraola’s football_ - The Athletic.htm",
+	  "url": "https://www.nytimes.com/athletic/7332606/2026/06/05/liverpool-andoni-iraola-tactics-style/",
+	  "images": 5
+	},
+	{
+	  "file": "Zes boetes gekregen in nieuwe 30km-zone_ waarom 30 rijden zo lastig is op wegen waar je eerst 50 mocht _ Regio _ AD.nl.htm",
+	  "url": "https://archive.ph/GrvH5",
+	  "images": 2
+	},
+  {
+	  "file": "The flag stranglers - Works in Progress Magazine.htm",
+	  "url": "https://worksinprogress.co/issue/the-flag-stranglers/",
+	  "images": 6
 	}
   ]
 }

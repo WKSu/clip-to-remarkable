@@ -123,8 +123,9 @@ async function clipActiveTab(tab) {
     if (finalByProvisional.has(i.href)) {
       body = body.replace(new RegExp(esc, "g"), finalByProvisional.get(i.href));
     } else {
-      // remove the orphaned self-closed <img .../> we couldn't fetch
-      body = body.replace(new RegExp('<img[^>]*src="' + esc + '"[^>]*/>', "g"), "");
+      // remove the orphaned <img> (and its <figure> wrapper if present)
+      body = body.replace(new RegExp('<figure[^>]*>[\\s\\S]*?<img[^>]*src="' + esc + '"[^>]*/?>(?:[\\s\\S]*?)</figure>', "g"), "");
+      body = body.replace(new RegExp('<img[^>]*src="' + esc + '"[^>]*/?>','g'), "");
     }
   });
 

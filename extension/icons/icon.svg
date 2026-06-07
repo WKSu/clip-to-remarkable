@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <!-- Background -->
+  <rect width="512" height="512" fill="transparent" />
+  
+  <!-- Tablet Body -->
+  <rect x="96" y="48" width="320" height="416" rx="32" fill="#FAFAFA" stroke="#2A2A2E" stroke-width="24"/>
+  
+  <!-- reMarkable signature chin -->
+  <line x1="96" y1="400" x2="416" y2="400" stroke="#2A2A2E" stroke-width="24"/>
+  
+  <!-- Article Text Lines -->
+  <line x1="150" y1="140" x2="350" y2="140" stroke="#2A2A2E" stroke-width="16" stroke-linecap="round"/>
+  <line x1="150" y1="190" x2="350" y2="190" stroke="#2A2A2E" stroke-width="16" stroke-linecap="round"/>
+  <line x1="150" y1="240" x2="260" y2="240" stroke="#2A2A2E" stroke-width="16" stroke-linecap="round"/>
+  
+  <!-- Image Placeholder (Highlighting your new feature) -->
+  <rect x="150" y="280" width="100" height="70" rx="8" fill="none" stroke="#2A2A2E" stroke-width="12" stroke-dasharray="8 8"/>
+  <circle cx="200" cy="315" r="16" fill="#2A2A2E"/>
+
+  <!-- Firefox-Orange Paperclip overlaying the top right -->
+  <path d="M 330,40 v 70 a 30,30 0 0,0 60,0 v -80 a 16,16 0 0,0 -32,0 v 70 a 6,6 0 0,0 12,0 v -50" 
+        fill="none" stroke="#FF7139" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
