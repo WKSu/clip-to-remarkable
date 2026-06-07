@@ -1,0 +1,8 @@
+node_modules/
+*.zip
+*.xpi
+web-ext-artifacts/
+.DS_Store
+
+# copyrighted article fixtures (kept local)
+test/fixtures/

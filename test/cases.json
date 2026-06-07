@@ -1,0 +1,46 @@
+{
+  "_comment": "Ground-truth expected image counts per article. Drop the matching .htm file into test/fixtures/ (gitignored to avoid redistributing copyrighted article HTML) and run `npm test`. Add entries here to extend the suite.",
+  "cases": [
+    {
+      "file": "India_s_surprise_baby_bust_is_a_warning_to_the_world.htm",
+      "url": "https://www.economist.com/leaders/2026/06/04/indias-surprise-baby-bust-is-a-warning-to-the-world",
+      "images": 1
+    },
+    {
+      "file": "The_blood_cancer_that_became_solvable_-_Works_in_Progress_Magazine.htm",
+      "url": "https://worksinprogress.co/x",
+      "images": 8,
+      "requireAssets": [
+        "originaltheoryor00wrig"
+      ],
+      "forbidAssets": [
+        "cover_issue"
+      ]
+    },
+    {
+      "file": "A_Fiery_Visitor_From_Space_Photo-Bombs_an_Erupting_Volcano_-_The_New_York_Times.htm",
+      "url": "https://www.nytimes.com/x",
+      "images": 1
+    },
+    {
+      "file": "The_25_Most_Interesting_Ideas_I_ve_Found_in_2025__So_Far_.htm",
+      "url": "https://www.derekthompson.org/x",
+      "images": 32
+    },
+    {
+      "file": "Why_people_fail_at_learning_languages_-_by_Colin_Gorrie.htm",
+      "url": "https://www.colingorrie.com/x",
+      "images": 2
+    },
+    {
+      "file": "Het_woonprobleem_van_Nederland__iedereen_wil_betaalbaar_wonen__maar_niemand_wil_het_betalen_-_De_Correspondent.htm",
+      "url": "https://decorrespondent.nl/x",
+      "images": 12
+    },
+    {
+      "file": "Failing_grades_soar_as_professors_see_greater_AI_usage__dwindling_math_skills_in_UC_Berkeley_computer_science_classes___Academics___dailycal_org.htm",
+      "url": "https://dailycal.org/x",
+      "images": 2
+    }
+  ]
+}

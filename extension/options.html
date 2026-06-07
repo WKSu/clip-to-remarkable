@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Clip to reMarkable — Pairing</title>
+  <style>
+    body { font: 15px/1.5 system-ui, sans-serif; max-width: 36rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+    h1 { font-size: 1.3rem; }
+    input { font-size: 1.1rem; letter-spacing: 0.15em; text-transform: lowercase; padding: 0.5rem; width: 9rem; }
+    button { font-size: 1rem; padding: 0.5rem 1rem; margin-left: 0.5rem; cursor: pointer; }
+    .status { margin-top: 1rem; padding: 0.6rem 0.8rem; border-radius: 6px; }
+    .ok { background: #e6f5ea; color: #1d6b35; }
+    .err { background: #fbe9e9; color: #a12424; }
+    .muted { color: #666; font-size: 0.9rem; }
+    code { background: #f2f2f2; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>Pair with reMarkable</h1>
+  <p>Open <a href="https://my.remarkable.com/device/browser/connect" target="_blank" rel="noopener">my.remarkable.com/device/browser/connect</a>,
+     sign in, and copy the eight-letter one-time code. Paste it below.</p>
+  <p>
+    <input id="code" maxlength="8" autocomplete="off" placeholder="abcdwxyz"/>
+    <button id="pair">Pair</button>
+    <button id="unpair" title="Forget the stored token">Unpair</button>
+  </p>
+  <div id="status" class="status muted">Checking pairing status…</div>
+  <p class="muted">The device token is stored only in this browser (<code>storage.local</code>) and is reused for every upload, so you pair just once.</p>
+
+  <script src="rmapi-bundle.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>

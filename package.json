@@ -1,0 +1,25 @@
+{
+  "name": "clip-to-remarkable",
+  "version": "0.1.0",
+  "description": "Firefox add-on that clips the current article to a clean EPUB (with images) and sends it to your reMarkable.",
+  "private": true,
+  "scripts": {
+    "vendor:readability": "cp node_modules/@mozilla/readability/Readability.js extension/Readability.js",
+    "build:rmapi": "esbuild build/rmapi-entry.js --bundle --format=iife --platform=browser --target=firefox121 --outfile=extension/rmapi-bundle.js",
+    "build": "npm run vendor:readability && npm run build:rmapi",
+    "lint": "web-ext lint --source-dir extension",
+    "package": "web-ext build --source-dir extension --artifacts-dir web-ext-artifacts --overwrite-dest",
+    "test": "node test/run.js"
+  },
+  "dependencies": {
+    "@xmldom/xmldom": "^0.9.10",
+    "jsdom": "^29.1.1",
+    "rmapi-js": "10.0.1"
+  },
+  "devDependencies": {
+    "@mozilla/readability": "0.6.0",
+    "esbuild": "0.28.0",
+    "web-ext": "^8.0.0",
+    "jsdom": "^24.0.0"
+  }
+}
