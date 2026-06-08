@@ -42,17 +42,6 @@ to the cloud API directly, so no browser-redirect allowlist is involved.
 
 Temporary add-ons are removed when Firefox restarts.
 
-### Permanent install
-
-Normal Firefox only installs signed add-ons. Either:
-
-- **Self-distribution (private):** sign the zip through
-  [addons.mozilla.org](https://addons.mozilla.org/developers/) as *unlisted* and
-  install the returned `.xpi`. See [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
-- **Firefox Developer Edition / Nightly / ESR:** set
-  `xpinstall.signatures.required` to `false` in `about:config`, then install the
-  packaged `.xpi`.
-
 ## Usage
 
 1. Open the add-on **options** (`about:addons` → this add-on → Preferences).
