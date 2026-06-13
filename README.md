@@ -34,24 +34,16 @@ to the cloud API directly, so no browser-redirect allowlist is involved.
 
 ## Install
 
-### Quick try (temporary)
+### Firefox Add-on
+Install from the [Firefox Add-On page](https://addons.mozilla.org/en-US/firefox/addon/clip-to-remarkable-unofficial/). 
+
+### Quick try (local)
 
 1. Download or clone this repo.
 2. Open `about:debugging#/runtime/this-firefox` in Firefox.
 3. **Load Temporary Add-on** → pick `extension/manifest.json`.
 
 Temporary add-ons are removed when Firefox restarts.
-
-### Permanent install
-
-Normal Firefox only installs signed add-ons. Either:
-
-- **Self-distribution (private):** sign the zip through
-  [addons.mozilla.org](https://addons.mozilla.org/developers/) as *unlisted* and
-  install the returned `.xpi`. See [`docs/SUBMISSION.md`](docs/SUBMISSION.md).
-- **Firefox Developer Edition / Nightly / ESR:** set
-  `xpinstall.signatures.required` to `false` in `about:config`, then install the
-  packaged `.xpi`.
 
 ## Usage
 
@@ -104,14 +96,6 @@ npm run package    # produces a zip in web-ext-artifacts/
 [`rmapi-js`](https://www.npmjs.com/package/rmapi-js); exact command and version
 pins are in [`build/BUILD.md`](build/BUILD.md).
 
-## Publishing to addons.mozilla.org
-
-See [`docs/SUBMISSION.md`](docs/SUBMISSION.md) for both the private (unlisted)
-and public (listed) paths, and [`docs/REVIEWER_NOTES.md`](docs/REVIEWER_NOTES.md)
-for the notes to paste into AMO's reviewer field. The validator reports
-**0 errors**; the remaining warnings are all in third-party libraries
-(Mozilla's Readability `innerHTML`; core-js's global lookup inside the rmapi-js
-bundle) and don't block signing.
 
 ## Limitations
 
