@@ -69,6 +69,54 @@ function withCorrectExt(href, mediaType) {
   return href.replace(/\.[^.\/]+$/, "." + ext);
 }
 
+// reMarkable's EPUB renderer only reliably displays these. Modern sites serve
+// WebP/AVIF/SVG, which are fetched and packed fine but render BLANK on-device —
+// the symptom of "13 images packed, 1 visible". We transcode the rest to PNG.
+const RM_SUPPORTED = { "image/jpeg": 1, "image/png": 1, "image/gif": 1 };
+const RM_MAX_WIDTH = 1872; // reMarkable Paper Pro panel width; caps EPUB size
+
+// Decode arbitrary image bytes and re-encode as PNG (optionally downscaled).
+// Runs in the Firefox background *page*, so createImageBitmap / OffscreenCanvas
+// / Image are all available. Throws on failure so the caller can keep the
+// original bytes (which still render in ordinary EPUB readers).
+async function transcodeToPng(bytes, mediaType) {
+  const blob = new Blob([bytes], { type: mediaType });
+  let source, w, h, revoke = null;
+
+  if (mediaType === "image/svg+xml") {
+    // createImageBitmap is unreliable for SVG in Firefox — decode via <img>.
+    const url = URL.createObjectURL(blob);
+    revoke = () => URL.revokeObjectURL(url);
+    const img = new Image();
+    await new Promise((res, rej) => {
+      img.onload = res;
+      img.onerror = () => rej(new Error("svg decode failed"));
+      img.src = url;
+    });
+    source = img;
+    w = img.naturalWidth || img.width;
+    h = img.naturalHeight || img.height;
+  } else {
+    source = await createImageBitmap(blob);
+    w = source.width;
+    h = source.height;
+  }
+
+  try {
+    if (!w || !h) throw new Error("zero-size image");
+    let dw = w, dh = h;
+    if (dw > RM_MAX_WIDTH) { dh = Math.max(1, Math.round((dh * RM_MAX_WIDTH) / dw)); dw = RM_MAX_WIDTH; }
+    const canvas = new OffscreenCanvas(dw, dh);
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(source, 0, 0, dw, dh);
+    const outBlob = await canvas.convertToBlob({ type: "image/png" });
+    return new Uint8Array(await outBlob.arrayBuffer());
+  } finally {
+    if (source && source.close) source.close();
+    if (revoke) revoke();
+  }
+}
+
 async function materializeImages(imageList) {
   const out = [];
   for (const img of imageList) {
@@ -92,9 +140,46 @@ async function materializeImages(imageList) {
     }
 
     if (!bytes || !mediaType) continue;
+
+    // Transcode formats reMarkable can't render to PNG. On failure keep the
+    // original bytes rather than dropping the image (still valid in other
+    // readers, and no worse than today on-device).
+    if (!RM_SUPPORTED[mediaType]) {
+      try {
+        const png = await transcodeToPng(bytes, mediaType);
+        if (png && png.length) { bytes = png; mediaType = "image/png"; }
+      } catch (_) { /* keep original bytes */ }
+    }
+
     out.push({ provisionalHref: img.href, href: withCorrectExt(img.href, mediaType), mediaType, data: bytes });
   }
   return out;
+}
+
+// Resolve the id of a top-level folder by name, creating it if absent.
+async function ensureFolder(rm, name) {
+  const items = await rm.listItems();
+  const hit = items.find(
+    (i) => i.type === "CollectionType" && i.visibleName === name && (i.parent || "") === ""
+  );
+  if (hit) return hit.id;
+  const made = await rm.putFolder(name);
+  return made.id;
+}
+
+// A freshly web-uploaded doc can take a moment to appear in the sync tree, so
+// move() (which looks it up by hash) may miss it on the first try. Retry with a
+// forced root-hash refresh before giving up.
+async function moveWithRetry(rm, hash, folderId, tries = 3) {
+  let lastErr;
+  for (let i = 0; i < tries; i++) {
+    try { return await rm.move(hash, folderId, true); }
+    catch (e) {
+      lastErr = e;
+      await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 async function clipActiveTab(tab) {
@@ -143,14 +228,29 @@ async function clipActiveTab(tab) {
 
   // 5: upload to reMarkable if paired, else fall back to a download.
   const safe = (result.title || "article").replace(/[^\w\- ]+/g, "").trim().slice(0, 80) || "article";
-  const stored = await api.storage.local.get("deviceToken");
+  const stored = await api.storage.local.get(["deviceToken", "folderName"]);
   const token = stored && stored.deviceToken;
+  const folderName = ((stored && stored.folderName) || "Articles").trim();
 
   if (token) {
     try {
       const rm = await RMAPI.remarkable(token);
-      await rm.uploadEpub(result.title || safe, bytes);
-      notify("Sent to reMarkable", `"${safe}" uploaded with ${images.length} image(s).`);
+      const up = await rm.uploadEpub(result.title || safe, bytes);
+
+      // Relocate into the configured folder (auto-created). If the move fails,
+      // the doc still uploaded to the root — never lose the clip.
+      let placed = "";
+      if (folderName) {
+        try {
+          const folderId = await ensureFolder(rm, folderName);
+          await moveWithRetry(rm, up.hash, folderId);
+          placed = ` in "${folderName}"`;
+        } catch (_) {
+          placed = ` (in root — couldn't reach "${folderName}")`;
+        }
+      }
+
+      notify("Sent to reMarkable", `"${safe}" uploaded with ${images.length} image(s)${placed}.`);
       return;
     } catch (e) {
       notify("Upload failed — saved instead", String((e && e.message) || e));

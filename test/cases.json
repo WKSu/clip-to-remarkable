@@ -66,6 +66,12 @@
 	  "file": "The flag stranglers - Works in Progress Magazine.htm",
 	  "url": "https://worksinprogress.co/issue/the-flag-stranglers/",
 	  "images": 6
+	},
+	{
+	  "file": "Underdogs Curacao, Kaapverdie en Haiti kleuren het WK - NOS.htm",
+	  "url": "https://nos.nl/artikel/2618376-underdogs-curacao-kaapverdie-en-haiti-kleuren-het-wk-nederig-maar-ook-trots",
+	  "_comment": "8 photos + 2 video-poster thumbnails. All webp on images.cdn.nos.nl, which reMarkable can't render until transcoded to PNG (see background.js).",
+	  "images": 10
 	}
   ]
 }

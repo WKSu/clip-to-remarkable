@@ -13,6 +13,17 @@ async function refreshStatus() {
   else show("Not paired yet. Enter a one-time code above.", "muted");
 }
 
+async function loadFolder() {
+  const { folderName } = await api.storage.local.get("folderName");
+  $("folder").value = folderName != null ? folderName : "Articles";
+}
+
+$("saveFolder").addEventListener("click", async () => {
+  const folderName = ($("folder").value || "").trim();
+  await api.storage.local.set({ folderName });
+  show(folderName ? `Clips will be saved into "${folderName}".` : "Clips will be saved to the home screen.", "ok");
+});
+
 $("pair").addEventListener("click", async () => {
   const code = ($("code").value || "").trim().toLowerCase();
   if (code.length !== 8) {
@@ -36,3 +47,4 @@ $("unpair").addEventListener("click", async () => {
 });
 
 refreshStatus();
+loadFolder();
