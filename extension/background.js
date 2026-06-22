@@ -156,27 +156,51 @@ async function materializeImages(imageList) {
   return out;
 }
 
-// Resolve the id of a top-level folder by name, creating it if absent.
-async function ensureFolder(rm, name) {
+// Resolve the id of a folder given a "/"-separated path (e.g. "Documentos" or
+// "Documentos/Articles"), creating any missing segment along the way. Each
+// segment is matched against folders whose parent is the previous segment, so a
+// nested "Articles" is never confused with a top-level one of the same name.
+async function ensureFolderPath(rm, path) {
+  const segments = String(path)
+    .split("/")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!segments.length) return "";
+
   const items = await rm.listItems();
-  const hit = items.find(
-    (i) => i.type === "CollectionType" && i.visibleName === name && (i.parent || "") === ""
-  );
-  if (hit) return hit.id;
-  const made = await rm.putFolder(name);
-  return made.id;
+  let parentId = "";
+  for (const name of segments) {
+    const hit = items.find(
+      (i) => i.type === "CollectionType" && i.visibleName === name && (i.parent || "") === parentId
+    );
+    if (hit) {
+      parentId = hit.id;
+    } else {
+      const made = await rm.putFolder(name, { parent: parentId });
+      parentId = made.id;
+      // Track the new folder so a deeper segment can nest under it.
+      items.push({ id: made.id, type: "CollectionType", visibleName: name, parent: parentId });
+    }
+  }
+  return parentId;
 }
 
-// A freshly web-uploaded doc can take a moment to appear in the sync tree, so
-// move() (which looks it up by hash) may miss it on the first try. Retry with a
-// forced root-hash refresh before giving up.
-async function moveWithRetry(rm, hash, folderId, tries = 3) {
+// A freshly web-uploaded doc can take a moment to appear in the sync tree, and
+// the cloud re-processes it after upload (thumbnails, page data), which CHANGES
+// its entry hash. move() locates the doc by hash, so the hash returned at upload
+// time quickly goes stale. Instead, look the doc up by its stable id on each
+// attempt and move whatever hash it currently has, refreshing the root first.
+async function moveWithRetry(rm, docId, folderId, tries = 4) {
   let lastErr;
   for (let i = 0; i < tries; i++) {
-    try { return await rm.move(hash, folderId, true); }
-    catch (e) {
+    try {
+      const items = await rm.listIds(true); // forced root refresh
+      const entry = items.find((e) => e.id === docId);
+      if (!entry) throw new Error("uploaded doc not yet in sync tree");
+      return await rm.move(entry.hash, folderId, true);
+    } catch (e) {
       lastErr = e;
-      await new Promise((r) => setTimeout(r, 600 * (i + 1)));
+      await new Promise((r) => setTimeout(r, 700 * (i + 1)));
     }
   }
   throw lastErr;
@@ -242,11 +266,12 @@ async function clipActiveTab(tab) {
       let placed = "";
       if (folderName) {
         try {
-          const folderId = await ensureFolder(rm, folderName);
-          await moveWithRetry(rm, up.hash, folderId);
+          const folderId = await ensureFolderPath(rm, folderName);
+          await moveWithRetry(rm, up.id, folderId);
           placed = ` in "${folderName}"`;
-        } catch (_) {
-          placed = ` (in root — couldn't reach "${folderName}")`;
+        } catch (e) {
+          console.error("clip-to-remarkable: could not move into folder", e);
+          placed = ` (in root — couldn't reach "${folderName}": ${(e && e.message) || e})`;
         }
       }
 

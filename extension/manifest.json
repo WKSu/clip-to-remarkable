@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clip to reMarkable",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Extract the current article with Readability, bundle its images, and build a clean EPUB.",
   "browser_specific_settings": {
     "gecko": {
