@@ -9039,8 +9039,8 @@ ${X}`);
   var Ew = C0({ lastOpened: C0({ timestamp: F0(), value: F0() }, void 0, true), original: C0({ timestamp: F0(), value: z2() }, void 0, true), pages: h0(vw), uuids: E6(h0(C0({ first: F0(), second: o1() }, void 0, true))) }, void 0, true);
   var Sw = C0(void 0, { tags: h0(QU) });
   var kw = C0(void 0, { tags: h0(F0()) });
-  var qU = { coverPageNumber: z2(), documentMetadata: Tw, extraMetadata: S6(F0()), fileType: C2("epub", "notebook", "pdf"), fontName: F0(), lineHeight: z2(), orientation: C2("portrait", "landscape"), pageCount: o1(), sizeInBytes: F0(), textAlignment: C2("", "justify", "left"), textScale: O0() };
-  var $U = { cPages: Ew, customZoomCenterX: O0(), customZoomCenterY: O0(), customZoomOrientation: C2("portrait", "landscape"), customZoomPageHeight: O0(), customZoomPageWidth: O0(), customZoomScale: O0(), dummyDocument: w1(), formatVersion: y8(), keyboardMetadata: C0({ count: o1(), timestamp: O0() }, void 0, true), lastOpenedPage: z2(), margins: o1(), originalPageCount: z2(), pages: E6(h0(F0())), pageTags: h0(xw), redirectionPageMap: h0(z2()), transform: C0(void 0, { m11: O0(), m12: O0(), m13: O0(), m21: O0(), m22: O0(), m23: O0(), m31: O0(), m32: O0(), m33: O0() }, true), viewBackgroundFilter: C2("off", "fullpage"), zoomMode: C2("bestFit", "customFit", "fitToHeight", "fitToWidth") };
+  var qU = { coverPageNumber: z2(), documentMetadata: Tw, extraMetadata: S6(F0()), fileType: C2("epub", "notebook", "pdf"), fontName: F0(), lineHeight: z2(), orientation: C2("portrait", "landscape"), pageCount: o1(), textAlignment: C2("", "justify", "left"), textScale: O0() };
+  var $U = { cPages: Ew, customZoomCenterX: O0(), customZoomCenterY: O0(), customZoomOrientation: C2("portrait", "landscape"), customZoomPageHeight: O0(), customZoomPageWidth: O0(), customZoomScale: O0(), dummyDocument: w1(), formatVersion: y8(), keyboardMetadata: C0({ count: o1(), timestamp: O0() }, void 0, true), lastOpenedPage: z2(), margins: o1(), originalPageCount: z2(), pages: E6(h0(F0())), pageTags: h0(xw), redirectionPageMap: h0(z2()), sizeInBytes: F0(), transform: C0(void 0, { m11: O0(), m12: O0(), m13: O0(), m21: O0(), m22: O0(), m23: O0(), m31: O0(), m32: O0(), m33: O0() }, true), viewBackgroundFilter: C2("off", "fullpage"), zoomMode: C2("bestFit", "customFit", "fitToHeight", "fitToWidth") };
   var gw = C0(qU, { ...$U, tags: h0(QU) }, true);
   var yw = C0(qU, { ...$U, tags: h0(F0()) }, true);
   var fw = C0({ name: F0(), author: F0(), iconData: F0(), categories: h0(F0()), labels: h0(F0()), orientation: C2("portrait", "landscape"), templateVersion: F0(), supportedScreens: h0(C2("rm2", "rmPP")), constants: h0(S6(z2())), items: h0(AX()) }, { formatVersion: y8() });
@@ -9167,6 +9167,7 @@ or
       else return await this.putText(Q, JSON.stringify(q));
     }
     async putEntries(Q, q, $) {
+      if (Q === "root" && $ === 3) console.warn('writing a schema 3 root index, which reMarkable rejects with a 400 "Software must be updated" error; write the root index with schema version 4 instead');
       q.sort((V, z) => V.id.localeCompare(z.id));
       let X = q.reduce((V, z) => V + z.size, 0), Y = [`${$}
 `];
@@ -9175,8 +9176,11 @@ or
         Y.push(`0:${V}:${q.length}:${X}
 `);
       }
-      for (let { hash: V, type: z, id: H, subfiles: j, size: Z } of q) Y.push(`${V}:${z}:${H}:${j}:${Z}
+      for (let { hash: V, type: z, id: H, subfiles: j, size: Z } of q) {
+        let h = $ === 4 ? 0 : z;
+        Y.push(`${V}:${h}:${H}:${j}:${Z}
 `);
+      }
       let K = new TextEncoder().encode(Y.join("")), U;
       if ($ === 3) {
         let V = [];
@@ -9298,7 +9302,7 @@ or
       let I = n1(), f = /* @__PURE__ */ new Date(), E = { parent: Y, pinned: J, lastModified: (+f).toFixed(), createdTime: (+f).toFixed(), type: "DocumentType", visibleName: Q, lastOpened: "0", lastOpenedPage: 0 }, d = { coverPageNumber: H, documentMetadata: { authors: j, title: Z, publicationDate: h, publisher: g }, extraMetadata: C, lineHeight: N, margins: W, orientation: M, fileType: q, formatVersion: 1, tags: w?.map((u) => ({ name: u, timestamp: +f })) ?? [], fontName: z, textAlignment: V, textScale: G, zoomMode: K, viewBackgroundFilter: U, originalPageCount: 1, pageCount: 1, pageTags: [], pages: [n1()], redirectionPageMap: [0], sizeInBytes: $.length.toFixed() }, [[R, x], [D, L], [S, y], [v, a], [Q0, Y0, B0]] = await Promise.all([this.raw.putContent(`${I}.content`, d), this.raw.putMetadata(`${I}.metadata`, E), this.raw.putText(`${I}.pagedata`, `
 `), this.raw.putFile(`${I}.${q}`, $), this.#X(X)]), [[c, U0], { entries: P }] = await Promise.all([this.raw.putEntries(I, [R, D, S, v], B0), this.raw.getEntries("root.docSchema", Q0)]);
       P.push(c);
-      let [l, $0] = await this.raw.putEntries("root", P, B0);
+      let [l, $0] = await this.raw.putEntries("root", P, 4);
       return await Promise.all([x, L, y, a, U0, $0]), await this.#Y(l.hash, Y0), { id: I, hash: c.hash };
     }
     async putPdf(Q, q, $ = {}) {
@@ -9311,7 +9315,7 @@ or
       if (q && !t2.test(q)) throw new I2(q, t2, "parent must be a valid document id");
       let X = n1(), Y = /* @__PURE__ */ new Date(), J = { tags: [] }, K = { lastModified: (+Y).toFixed(), createdTime: (+Y).toFixed(), parent: q, pinned: false, type: "CollectionType", visibleName: Q }, [[U, G], [V, z], [H, j, Z]] = await Promise.all([this.raw.putContent(`${X}.content`, J), this.raw.putMetadata(`${X}.metadata`, K), this.#X($)]), [[h, g], { entries: C }] = await Promise.all([this.raw.putEntries(X, [U, V], Z), this.raw.getEntries("root.docSchema", H)]);
       C.push(h);
-      let [N, W] = await this.raw.putEntries("root", C, Z);
+      let [N, W] = await this.raw.putEntries("root", C, 4);
       return await Promise.all([G, z, g, W]), await this.#Y(N.hash, j), { id: X, hash: h.hash };
     }
     async uploadEpub(Q, q) {
@@ -9339,7 +9343,7 @@ or
       let [[z, H], j] = await Promise.all([this.#W(V.id, Q, q, K), this.getMetadata(V.id, Q)]);
       if (j.type !== $) throw Error(`expected type ${$} but got ${j.type} for hash ${Q}`);
       U[G] = z;
-      let [Z, h] = await this.raw.putEntries("root", U, K);
+      let [Z, h] = await this.raw.putEntries("root", U, 4);
       return await Promise.all([H, h]), await this.#Y(Z.hash, J), { hash: z.hash };
     }
     async updateDocument(Q, q, $ = false) {
@@ -9366,7 +9370,7 @@ or
       if (G === void 0) throw new k6(Q);
       let [V, z] = await this.#z(G.id, Q, q, J);
       K[U] = V;
-      let [H, j] = await this.raw.putEntries("root", K, J);
+      let [H, j] = await this.raw.putEntries("root", K, 4);
       return await Promise.all([z, j]), await this.#Y(H.hash, Y), { hash: V.hash };
     }
     async move(Q, q, $ = false) {
@@ -9388,7 +9392,7 @@ or
       for (let g of K) (U.has(g.hash) ? G : V).push(g);
       let z = await Promise.all(G.map(({ id: g, hash: C }) => this.#z(g, C, { parent: q }, J))), H = [], j = {};
       for (let [g, [C, N]] of z.entries()) V.push(C), H.push(N), j[G[g].hash] = C.hash;
-      let [Z, h] = await this.raw.putEntries("root", V, J);
+      let [Z, h] = await this.raw.putEntries("root", V, 4);
       return await Promise.all([Promise.all(H), h]), await this.#Y(Z.hash, Y), { hashes: j };
     }
     async bulkDelete(Q, q = false) {
@@ -9428,7 +9432,7 @@ or
     return lw(G, { rawHost: X, uploadHost: Y, cache: J, maxCacheSize: K, syncHost: U });
   }
 
-  // rmapi-entry.js
+  // build/rmapi-entry.js
   globalThis.RMAPI = { register: uC, remarkable: cC };
 })();
 /*! Bundled license information:

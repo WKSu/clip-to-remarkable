@@ -13,7 +13,7 @@ npm run vendor:readability   # cp node_modules/@mozilla/readability/Readability.
 
 ## rmapi-bundle.js
 A browser IIFE bundle of the public npm package
-[`rmapi-js`](https://www.npmjs.com/package/rmapi-js) (v10.0.1), which implements
+[`rmapi-js`](https://www.npmjs.com/package/rmapi-js) (v10.1.1), which implements
 the reMarkable cloud device-pairing + sync upload protocol. Built with esbuild
 (v0.28.0):
 

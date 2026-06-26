@@ -1,14 +1,14 @@
 /*
  * background.js — Firefox MV3 event page.
- * Loaded after jszip.min.js and epub-builder.js (see manifest background.scripts),
- * so globals JSZip and EpubBuilder are available.
+ * Loaded after rmapi-bundle.js and epub-builder.js (see manifest background.scripts),
+ * so globals RMAPI and EpubBuilder are available.
  *
  * Flow on toolbar click:
  *   1. inject Readability.js + extract.js into the active tab
  *   2. run extractArticle() in the page  -> article + image URL list
  *   3. fetch each image here (host_permissions bypass CORS), sniff media-type
  *   4. build a valid EPUB
- *   5. download it (placeholder until the reMarkable upload is wired)
+ *   5. upload to reMarkable if paired (else download the EPUB as a fallback)
  */
 const api = globalThis.browser || globalThis.chrome;
 
@@ -16,7 +16,7 @@ function notify(title, message) {
   try {
     api.notifications.create({
       type: "basic",
-      iconUrl: api.runtime.getURL("icons/48.png"),
+      iconUrl: api.runtime.getURL("icons/icon.png"),
       title,
       message,
     });
@@ -156,6 +156,28 @@ async function materializeImages(imageList) {
   return out;
 }
 
+// List folders without reading each item's .content. reMarkable's cloud keeps
+// adding fields to .content files, and rmapi-js validates content strictly
+// enough that a single unparseable item makes rm.listItems() throw — which used
+// to take folder placement down with it ("invalid content: Couldn't validate as
+// collection…"). Metadata carries everything we need (type, visibleName,
+// parent), validates leniently, so read only that — and skip any one item that
+// still won't parse rather than failing the whole listing.
+async function listCollections(rm) {
+  const ids = await rm.listIds();
+  const metas = await Promise.all(
+    ids.map(async ({ id, hash }) => {
+      try {
+        const m = await rm.getMetadata(id, hash);
+        return { id, type: m.type, visibleName: m.visibleName, parent: m.parent || "" };
+      } catch (_) {
+        return null; // one bad item shouldn't sink folder placement
+      }
+    })
+  );
+  return metas.filter((m) => m && m.type === "CollectionType");
+}
+
 // Resolve the id of a folder given a "/"-separated path (e.g. "Documentos" or
 // "Documentos/Articles"), creating any missing segment along the way. Each
 // segment is matched against folders whose parent is the previous segment, so a
@@ -167,19 +189,20 @@ async function ensureFolderPath(rm, path) {
     .filter(Boolean);
   if (!segments.length) return "";
 
-  const items = await rm.listItems();
+  const items = await listCollections(rm);
   let parentId = "";
   for (const name of segments) {
     const hit = items.find(
-      (i) => i.type === "CollectionType" && i.visibleName === name && (i.parent || "") === parentId
+      (i) => i.visibleName === name && i.parent === parentId
     );
     if (hit) {
       parentId = hit.id;
     } else {
       const made = await rm.putFolder(name, { parent: parentId });
-      parentId = made.id;
-      // Track the new folder so a deeper segment can nest under it.
+      // Track the new folder (with the parent it was created under) so a deeper
+      // segment can nest under it.
       items.push({ id: made.id, type: "CollectionType", visibleName: name, parent: parentId });
+      parentId = made.id;
     }
   }
   return parentId;
