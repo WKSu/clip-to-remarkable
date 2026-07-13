@@ -119,7 +119,8 @@
     return '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n' +
       '<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="' + xmlEscape(meta.lang) + '" xml:lang="' + xmlEscape(meta.lang) + '">\n' +
       '<head>\n  <meta charset="utf-8"/>\n  <title>' + xmlEscape(meta.title) + '</title>\n' +
-      '  <style>img{max-width:100%;height:auto;} .byline{color:#555;font-style:italic;}</style>\n</head>\n<body>\n' +
+      '  <style>img{max-width:100%;height:auto;} .byline{color:#555;font-style:italic;} ' +
+      'img.math-inline{vertical-align:middle;} img.math-display{display:block;margin:0.8em auto;}</style>\n</head>\n<body>\n' +
       '  <h1>' + xmlEscape(meta.title) + '</h1>\n' + byline + body + '\n</body>\n</html>\n';
   }
 

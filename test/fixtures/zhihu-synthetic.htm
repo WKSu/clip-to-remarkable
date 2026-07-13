@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>梯度下降的直观理解 — Synthetic Zhihu Fixture</title>
+</head>
+<body>
+<main>
+<article>
+<h1>梯度下降的直观理解</h1>
+<p>This synthetic fixture reproduces the three states Zhihu (zhuanlan.zhihu.com)
+formula markup can be in when the extension clips a live page: a hydrated
+formula wrapper holding both a rendered equation image and the raw TeX as
+fallback text, an unhydrated wrapper holding only the TeX text, and a bare
+equation image the way Zhihu content appears when syndicated. Each paragraph
+carries enough prose for Readability to keep it in the article body.</p>
+
+<p>The hydrated case is the one users reported: the formula image gets embedded
+but the raw code text shows up beside it, duplicated. The partial derivative
+<span class="ztext-math" data-eeimg="1" data-tex="\frac{\partial L}{\partial w}"><span><img eeimg="1" src="//www.zhihu.com/equation?tex=%5Cfrac%7B%5Cpartial+L%7D%7B%5Cpartial+w%7D" alt="\frac{\partial L}{\partial w}"/></span><span class="tex-source">\frac{\partial L}{\partial w}</span></span>
+appears here in exactly that arrangement, and the whole wrapper must collapse
+into a single placeholder so the fallback text never reaches the reader.</p>
+
+<p>The unhydrated case happens below the fold, where Zhihu's client script has
+not yet swapped the TeX for an image. The learning-rate update rule
+<span class="ztext-math" data-eeimg="1" data-tex="w_{t+1} = w_t - \eta \nabla L(w_t)">w_{t+1} = w_t - \eta \nabla L(w_t)</span>
+sits here as plain text inside its wrapper, recoverable only through the
+data-tex attribute that Zhihu leaves on the element.</p>
+
+<p>Display equations on Zhihu are marked by a trailing double backslash in the
+editor, which is the only signal distinguishing them from inline formulas:</p>
+<p><span class="ztext-math" data-eeimg="1" data-tex="L(w) = \frac{1}{n}\sum_{i=1}^{n} (y_i - f(x_i; w))^2 \\"><span><img eeimg="1" src="//www.zhihu.com/equation?tex=L%28w%29+%3D+%5Cfrac%7B1%7D%7Bn%7D%5Csum_%7Bi%3D1%7D%5E%7Bn%7D+%28y_i+-+f%28x_i%3B+w%29%29%5E2+%5C%5C" alt="L(w) = \frac{1}{n}\sum_{i=1}^{n} (y_i - f(x_i; w))^2 \\"/></span></span></p>
+
+<p>Finally, syndicated Zhihu content and some older posts carry bare equation
+images with no wrapper at all, only the endpoint URL and an alt attribute. The
+chain rule
+<img eeimg="1" src="//www.zhihu.com/equation?tex=%5Cfrac%7Bdz%7D%7Bdx%7D+%3D+%5Cfrac%7Bdz%7D%7Bdy%7D+%5Ccdot+%5Cfrac%7Bdy%7D%7Bdx%7D" alt="\frac{dz}{dx} = \frac{dz}{dy} \cdot \frac{dy}{dx}"/>
+closes the tour in that form. If all four formulas above survive as rendered
+placeholders with no duplicated TeX text in the body, the Zhihu pipeline is
+working as intended and readers get formulas instead of code soup.</p>
+</article>
+</main>
+</body>
+</html>

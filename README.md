@@ -29,8 +29,16 @@ to the cloud API directly, so no browser-redirect allowlist is involved.
   each back in its own section — while never doing worse than Readability alone.
 - Strips recirculation/clutter ("More in…", "Editor's Picks", related posts,
   share bars, subscribe widgets).
+- **Math support**: LaTeX/MathML formulas (KaTeX, MathJax v2/v3, native MathML
+  as on Wikipedia/arXiv HTML, and TeX-image services like WordPress.com's
+  `latex.php` and Zhihu's equation endpoint) are re-rendered to crisp PNG
+  images sized to the surrounding text — the reMarkable's EPUB reader can't
+  render math markup itself. If a formula can't be rendered, it degrades to
+  its TeX source as code.
 - Pair once with a one-time code; uploads thereafter are automatic.
 - Produces EPUBs that pass the official W3C **epubcheck** with 0 errors.
+- Works on **Firefox for Android** (the clip button lives in the browser's
+  extensions menu; system notifications may not appear there).
 
 ## Install
 
@@ -79,22 +87,24 @@ Files (all in `extension/`):
 | `options.html` / `options.js` | One-time-code pairing UI |
 | `Readability.js` | Mozilla Readability, unmodified |
 | `rmapi-bundle.js` | Generated bundle of `rmapi-js` (reMarkable cloud client) |
+| `mathjax-bundle.js` | Generated bundle of MathJax v3 (TeX/MathML → SVG for math rendering) |
 
 ## Build
 
-Only `rmapi-bundle.js` and `Readability.js` are vendored/generated; both are
-committed so the repo loads as-is. To rebuild them:
+Only `rmapi-bundle.js`, `mathjax-bundle.js`, and `Readability.js` are
+vendored/generated; all are committed so the repo loads as-is. To rebuild them:
 
 ```bash
 npm install
-npm run build      # vendors Readability + bundles rmapi-js into extension/
+npm run build      # vendors Readability + bundles rmapi-js and MathJax into extension/
 npm run lint       # web-ext lint (expect 0 errors)
 npm run package    # produces a zip in web-ext-artifacts/
 ```
 
-`rmapi-bundle.js` is produced by esbuild over the public npm package
-[`rmapi-js`](https://www.npmjs.com/package/rmapi-js); exact command and version
-pins are in [`build/BUILD.md`](build/BUILD.md).
+`rmapi-bundle.js` and `mathjax-bundle.js` are produced by esbuild over the
+public npm packages [`rmapi-js`](https://www.npmjs.com/package/rmapi-js) and
+[`mathjax-full`](https://www.npmjs.com/package/mathjax-full); exact commands and
+version pins are in [`build/BUILD.md`](build/BUILD.md).
 
 
 ## Limitations
@@ -112,5 +122,6 @@ This project is MIT-licensed (see [`LICENSE`](LICENSE)). It bundles:
 - [Mozilla Readability](https://github.com/mozilla/readability) — Apache-2.0
 - [rmapi-js](https://github.com/erikbrinkman/rmapi-js) — MIT (which in turn
   bundles core-js and JSZip)
+- [MathJax](https://github.com/mathjax/MathJax-src) (`mathjax-full`) — Apache-2.0
 
 Not affiliated with or endorsed by reMarkable AS.

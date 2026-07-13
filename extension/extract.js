@@ -109,6 +109,11 @@ function extractArticle() {
     var scope = lca(titleEl, lastParaEl) || lca(firstParaEl, lastParaEl) || document.body;
     var bodyContainer = matchedParaEls.reduce(function (acc, el) { return acc ? lca(acc, el) : el; }, null) || scope;
 
+    // Detect rendered math (KaTeX / MathJax / MathML) before image discovery
+    // so math-internal <img>s (e.g. Wikipedia's MathML fallback images) are
+    // not registered as ordinary photos.
+    var mathData = detectMathNodes(scope, bodyContainer, lastPos, P);
+
     // Collect every sizeable, non-clutter image within the article scope.
     // Template images (SSR pages like NYT) are collected but NOT tagged in the
     // live DOM since they live in a detached DocumentFragment.
@@ -142,6 +147,7 @@ function extractArticle() {
     for (var ii = 0; ii < imgs.length; ii++) {
       var img0 = imgs[ii], ip = P(img0);
       if (!scope.contains(img0)) continue;
+      if (img0.closest && img0.closest("[data-clip-math-id],[data-clip-math-rm]")) continue;
       if (ip > lastPos && !(bodyContainer && bodyContainer.contains(img0) && (ip - lastPos) <= 24)) continue;
       registerImage(img0, ip, true);
     }
@@ -170,9 +176,35 @@ function extractArticle() {
       el.removeAttribute("sizes");
     });
 
+    // Text inside replaced math nodes (TeX fallback text, KaTeX's duplicated
+    // MathML+HTML serialisation) legitimately disappears from the marker pass;
+    // it must be discounted when judging whether that pass degraded. On
+    // math-heavy pages (e.g. Zhihu) this text can be >80% of the article.
+    var mathTextLen = 0;
+    document.querySelectorAll("[data-clip-math-id]").forEach(function (el) {
+      mathTextLen += el.textContent.length;
+    });
+
+    // Swap each tagged math node for a marker <img> so Readability treats it
+    // like an inline image. The math class is re-applied at rehydration —
+    // Readability strips class attributes.
+    clone.querySelectorAll("[data-clip-math-id]").forEach(function (el) {
+      var mid = el.getAttribute("data-clip-math-id");
+      var mdata = mathData.get(mid);
+      if (!mdata || !el.parentNode) { el.removeAttribute("data-clip-math-id"); return; }
+      var mimg = clone.createElement("img");
+      mimg.setAttribute("src", "data-clip:" + mid);
+      if (mdata.alt) mimg.setAttribute("alt", mdata.alt);
+      el.parentNode.replaceChild(mimg, el);
+    });
+    // Drop leftover renderer nodes (MathJax v2 previews / source scripts)
+    clone.querySelectorAll("[data-clip-math-rm]").forEach(function (el) { el.remove(); });
+
     // Remove live-DOM markers immediately
-    document.querySelectorAll("[data-clip-id]").forEach(function (el) {
+    document.querySelectorAll("[data-clip-id],[data-clip-math-id],[data-clip-math-rm]").forEach(function (el) {
       el.removeAttribute("data-clip-id");
+      el.removeAttribute("data-clip-math-id");
+      el.removeAttribute("data-clip-math-rm");
     });
 
     // ── 4. Run Readability on the neutralised clone ───────────────────────
@@ -185,7 +217,7 @@ function extractArticle() {
       // text is preserved; images will still be placed via the fallback mechanism.
       var rawLen1 = article.content.replace(/<[^>]+>/g, "").length;
       var rawLen2 = article2.content.replace(/<[^>]+>/g, "").length;
-      if (rawLen2 < rawLen1 * 0.5) article2 = article;
+      if (rawLen2 < (rawLen1 - mathTextLen) * 0.5) article2 = article;
     }
 
     // ── 5. Rehydrate in-body images ───────────────────────────────────────
@@ -193,10 +225,21 @@ function extractArticle() {
       "<!DOCTYPE html><html><body>" + article2.content + "</body></html>", "text/html"
     );
 
-    var inBodyIds = new Set();
+    var inBodyIds = new Set(), inBodyMathIds = new Set();
 
     doc.querySelectorAll('img[src^="data-clip:"]').forEach(function (img) {
       var id = img.getAttribute("src").replace("data-clip:", "");
+
+      if (id.indexOf("CLIP_MATH_") === 0) {
+        var mdata = mathData.get(id);
+        if (!mdata) { img.remove(); return; }
+        img.setAttribute("src", mdata.provisionalHref);
+        if (mdata.alt) img.setAttribute("alt", mdata.alt);
+        img.setAttribute("class", mdata.display ? "math-display" : "math-inline");
+        inBodyMathIds.add(id);
+        return;
+      }
+
       var data = imageData.get(id);
       if (!data) { (img.closest("figure") || img).remove(); return; }
 
@@ -225,6 +268,14 @@ function extractArticle() {
       if (data.elPos < firstPos) {
         leads.push(data);
       } else if (data.elPos <= lastPos || (bodyContainer && (data.elPos - lastPos) <= 24)) {
+        inBodyFallbacks.push(data);
+      }
+    });
+    // Unplaced display math re-enters via the same fallback flow. Inline math
+    // whose sentence Readability dropped is not re-inserted standalone.
+    mathData.forEach(function (data, id) {
+      if (inBodyMathIds.has(id) || !data.display) return;
+      if (data.elPos >= firstPos && (data.elPos <= lastPos || (bodyContainer && (data.elPos - lastPos) <= 24))) {
         inBodyFallbacks.push(data);
       }
     });
@@ -264,9 +315,15 @@ function extractArticle() {
     // Remove any surviving non-article images (not rehydrated from our set).
     doc.querySelectorAll('img:not([src^="images/"])').forEach(function (n) { n.remove(); });
 
+    // Only math placeholders may keep a class; site classes on photos are noise.
+    doc.querySelectorAll("img[class]").forEach(function (el) {
+      var mc = el.getAttribute("class");
+      if (mc !== "math-inline" && mc !== "math-display") el.removeAttribute("class");
+    });
+
     // Attribute whitelist: only keep what EPUB needs.
     var ATTR_OK = {
-      IMG: { src: 1, alt: 1 }, A: { href: 1 },
+      IMG: { src: 1, alt: 1, class: 1 }, A: { href: 1 },
       TD: { colspan: 1, rowspan: 1 }, TH: { colspan: 1, rowspan: 1 },
       OL: { start: 1, type: 1 }, COL: { span: 1 }, COLGROUP: { span: 1 },
     };
@@ -321,6 +378,8 @@ function extractArticle() {
     // removed, no duplicates from abnormal DOM structure).
     var hrefToData = new Map();
     imageData.forEach(function (data) { hrefToData.set(data.provisionalHref, data); });
+    var mathByHref = new Map();
+    mathData.forEach(function (data) { mathByHref.set(data.provisionalHref, data); });
     var usedImages = [], seenUsedHref = {};
     doc.querySelectorAll('img[src^="images/"]').forEach(function (img) {
       var src = img.getAttribute("src");
@@ -332,6 +391,17 @@ function extractArticle() {
           href: data.provisionalHref,
           candidates: data.candidates,
           ...(data.dataUrl ? { dataUrl: data.dataUrl } : {}),
+        });
+        return;
+      }
+      var mdata = mathByHref.get(src);
+      if (mdata) {
+        seenUsedHref[src] = 1;
+        usedImages.push({
+          href: mdata.provisionalHref,
+          candidates: [],
+          alt: mdata.alt,
+          math: { tex: mdata.tex, mml: mdata.mml, svgText: mdata.svgText, display: mdata.display },
         });
       }
     });
@@ -492,4 +562,165 @@ function buildFigure(doc, data) {
     figure.appendChild(cap);
   }
   return figure;
+}
+
+// ── Math detection (KaTeX / MathJax / MathML) ─────────────────────────────
+// Finds rendered math within the article scope, extracts the best renderable
+// source (TeX > MathML > rendered SVG), and tags each node with
+// data-clip-math-id so the clone step can swap it for a marker <img> that
+// rides the image pipeline (background.js rasterises the math to PNG).
+// Identical formulas share one id and are rendered once.
+
+// Serialise a page-rendered MathJax <svg> so it renders standalone: ensure
+// namespaces and inline the glyph <defs> from the page-level font cache
+// (fontCache:"global") when the svg references it.
+function standaloneMathSvg(svg) {
+  var c = svg.cloneNode(true);
+  if (!c.getAttribute("xmlns")) c.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+  if (!c.getAttribute("xmlns:xlink")) c.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+  if (c.querySelector("use") && !c.querySelector("defs")) {
+    var cache = document.getElementById("MJX-SVG-global-cache");
+    var defs = cache && cache.querySelector("defs");
+    if (defs) c.insertBefore(defs.cloneNode(true), c.firstChild);
+  }
+  return c.outerHTML;
+}
+
+// TeX-as-image endpoints: WordPress.com (latex.php?latex=), Zhihu
+// (equation?tex=), CodeCogs (png|svg|gif.latex?).
+var TEX_IMG_RE = /\/latex\.php\?[^"']*latex=|[?&]tex=|\/(?:png|svg|gif)\.latex\?/;
+
+function texFromImgUrl(src) {
+  var m = /\/latex\.php\?[^"']*?latex=([^&]+)/.exec(src) ||
+          /[?&]tex=([^&]+)/.exec(src) ||
+          /\/(?:png|svg|gif)\.latex\?(.+)$/.exec(src);
+  if (!m) return "";
+  try { return decodeURIComponent(m[1].replace(/\+/g, " ")); } catch (e) { return ""; }
+}
+
+// WordPress prefixes display equations with \displaystyle; Zhihu's editor
+// marks block formulas with a trailing \\.
+function texLooksDisplay(tex) {
+  return /^\s*\\displaystyle/.test(tex) || /\\\\\s*$/.test(tex);
+}
+
+function detectMathNodes(scope, bodyContainer, lastPos, P) {
+  var mathData = new Map(); // id → {provisionalHref,tex,mml,svgText,display,alt,elPos}
+  var byKey = {}, counter = 0;
+
+  function inScope(el) {
+    if (!scope.contains(el)) return false;
+    var p = P(el);
+    if (p < 0) return false;
+    return !(p > lastPos && !(bodyContainer && bodyContainer.contains(el) && (p - lastPos) <= 24));
+  }
+
+  function register(el, src, display, alt) {
+    if (el.hasAttribute("data-clip-math-id")) return;
+    var source = src.tex || src.mml || src.svgText || "";
+    if (!source.trim()) return;
+    var key = source + "|" + (display ? 1 : 0);
+    var id = byKey[key];
+    if (!id) {
+      id = "CLIP_MATH_" + (counter++);
+      byKey[key] = id;
+      mathData.set(id, {
+        provisionalHref: "images/" + id + ".png",
+        tex: src.tex || null,
+        mml: src.mml || null,
+        svgText: src.svgText || null,
+        display: !!display,
+        alt: (alt || "").replace(/\s+/g, " ").trim().slice(0, 500),
+        elPos: P(el),
+      });
+    }
+    el.setAttribute("data-clip-math-id", id);
+  }
+
+  // KaTeX: the TeX source ships in the hidden MathML annotation.
+  document.querySelectorAll(".katex").forEach(function (k) {
+    var target = (k.closest && k.closest(".katex-display")) || k;
+    if (target.hasAttribute("data-clip-math-id") || !inScope(target)) return;
+    var display = target !== k;
+    var ann = k.querySelector('annotation[encoding="application/x-tex"]');
+    var mml = k.querySelector(".katex-mathml math");
+    if (ann && ann.textContent.trim()) register(target, { tex: ann.textContent }, display, ann.textContent);
+    else if (mml) register(target, { mml: mml.outerHTML }, display, mml.getAttribute("alttext") || k.textContent);
+  });
+
+  // MathJax v3: prefer the assistive MathML; fall back to the rendered SVG.
+  document.querySelectorAll("mjx-container").forEach(function (c) {
+    if (c.hasAttribute("data-clip-math-id") || !inScope(c)) return;
+    var display = c.getAttribute("display") === "true";
+    var mml = c.querySelector("mjx-assistive-mml math");
+    if (mml) { register(c, { mml: mml.outerHTML }, display, mml.getAttribute("alttext") || ""); return; }
+    var svg = c.querySelector("svg");
+    if (svg) register(c, { svgText: standaloneMathSvg(svg) }, display, svg.getAttribute("aria-label") || "");
+  });
+
+  // MathJax v2: the TeX source lives in a <script type="math/tex"> whose
+  // rendered output (and optional preview) are the preceding siblings.
+  document.querySelectorAll('script[type^="math/tex"]').forEach(function (s) {
+    var tex = s.textContent || "";
+    if (!tex.trim()) return;
+    var display = /mode\s*=\s*display/.test(s.getAttribute("type") || "");
+    var rendered = null, prev = s.previousElementSibling, hops = 0;
+    while (prev && hops < 3) {
+      var cls = typeof prev.className === "string" ? prev.className : "";
+      if (/(^|\s)MathJax_Preview(\s|$)/.test(cls)) prev.setAttribute("data-clip-math-rm", "1");
+      else if (/(^|\s)MathJax(_Display|_SVG|_SVG_Display|_CHTML|_MathML)?(\s|$)/.test(cls)) rendered = prev;
+      else break;
+      prev = prev.previousElementSibling; hops++;
+    }
+    var target = rendered || s;
+    if (target.hasAttribute("data-clip-math-id") || !inScope(target)) return;
+    if (rendered) s.setAttribute("data-clip-math-rm", "1");
+    register(target, { tex: tex }, display, tex);
+  });
+
+  // Zhihu-style wrappers (.ztext-math / data-tex): the TeX rides in an
+  // attribute; the wrapper may contain a rendered equation <img>, the raw TeX
+  // as fallback text, or both — replacing the whole wrapper removes the
+  // duplicated code text next to the formula.
+  document.querySelectorAll(".ztext-math,[data-tex]").forEach(function (el) {
+    if (el.hasAttribute("data-clip-math-id") || !inScope(el)) return;
+    var tex = el.getAttribute("data-tex") || "";
+    if (!tex.trim()) {
+      var im = el.querySelector("img");
+      if (im) tex = im.getAttribute("alt") || texFromImgUrl(im.getAttribute("src") || "");
+    }
+    if (!tex.trim()) return;
+    // Zhihu marks block formulas with data-eeimg="2" (styled display:block).
+    var display = el.getAttribute("data-eeimg") === "2" || texLooksDisplay(tex);
+    register(el, { tex: tex }, display, tex);
+  });
+
+  // TeX-rendered-as-image services (WordPress.com latex.php, Zhihu equation,
+  // CodeCogs): the TeX travels in the alt attribute and/or the URL. These
+  // rasters are re-rendered because they dedup-collapse by URL path (all
+  // formulas share one path, so only the first used to survive) and their
+  // fixed-zoom bitmaps scale badly on-device.
+  document.querySelectorAll("img").forEach(function (im) {
+    if (im.closest("[data-clip-math-id],[data-clip-math-rm]")) return;
+    var src = im.getAttribute("src") || "";
+    if (!TEX_IMG_RE.test(src) || !inScope(im)) return;
+    var tex = im.getAttribute("alt") || texFromImgUrl(src);
+    if (!tex.trim()) return;
+    register(im, { tex: tex }, texLooksDisplay(tex), tex);
+  });
+
+  // Raw MathML (Wikipedia native math, arXiv HTML, publishers). Skip <math>
+  // inside containers already handled above.
+  document.querySelectorAll("math").forEach(function (m) {
+    if (m.closest(".katex,mjx-container,.MathJax,.MathJax_Display,.MathJax_SVG,.MathJax_MathML,[data-clip-math-id]")) return;
+    // Wikipedia wraps math (plus a hidden fallback image) in .mwe-math-element;
+    // replace the whole wrapper so the fallback goes with it.
+    var target = (m.closest && m.closest(".mwe-math-element")) || m;
+    if (target.hasAttribute("data-clip-math-id") || !inScope(target)) return;
+    var display = m.getAttribute("display") === "block" || m.getAttribute("mode") === "display" ||
+      !!(m.closest && m.closest(".mwe-math-display"));
+    register(target, { mml: m.outerHTML }, display, m.getAttribute("alttext") || m.textContent);
+  });
+
+  return mathData;
 }

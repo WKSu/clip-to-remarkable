@@ -117,10 +117,93 @@ async function transcodeToPng(bytes, mediaType) {
   }
 }
 
+// ── Math rendering ────────────────────────────────────────────────────────
+// Math placeholders arrive with a {tex|mml|svgText, display} payload instead
+// of candidate URLs (see detectMathNodes in extract.js). TeX/MathML is
+// rendered to SVG by the bundled MathJax (mathjax-bundle.js → MathRender);
+// page-rendered MathJax SVGs are used as-is. The SVG is rasterised to PNG
+// oversampled for e-ink, while width/height/style on the <img> keep the
+// displayed size matched to the surrounding text.
+const PX_PER_EX = 8;   // MathJax ex metric at a 16px body font
+const EX_PER_EM = 0.5; // consistent with PX_PER_EX / 16px em
+const MATH_SCALE = 3;  // raster oversampling for e-ink crispness
+
+function parseExDims(svg) {
+  const w = /width="([\d.]+)ex"/.exec(svg);
+  const h = /height="([\d.]+)ex"/.exec(svg);
+  const v = /vertical-align:\s*(-?[\d.]+)ex/.exec(svg);
+  return {
+    widthEx: w ? parseFloat(w[1]) : 0,
+    heightEx: h ? parseFloat(h[1]) : 0,
+    verticalAlignEx: v ? parseFloat(v[1]) : 0,
+  };
+}
+
+async function renderMathToPng(math) {
+  let r;
+  if (math.tex) r = MathRender.texToSvg(math.tex, math.display);
+  else if (math.mml) r = MathRender.mmlToSvg(math.mml);
+  else if (math.svgText) r = { svg: math.svgText, ...parseExDims(math.svgText) };
+  else throw new Error("no math source");
+  if (!(r.widthEx > 0) || !(r.heightEx > 0)) throw new Error("math svg has no ex dimensions");
+
+  // Displayed size in CSS px (at a 16px em); the PNG itself is MATH_SCALE×.
+  let cssW = Math.max(1, Math.round(r.widthEx * PX_PER_EX));
+  let cssH = Math.max(1, Math.round(r.heightEx * PX_PER_EX));
+  if (cssW > RM_MAX_WIDTH) { cssH = Math.max(1, Math.round((cssH * RM_MAX_WIDTH) / cssW)); cssW = RM_MAX_WIDTH; }
+  const pw = Math.min(RM_MAX_WIDTH, cssW * MATH_SCALE);
+  const ph = Math.max(1, Math.round((cssH * pw) / cssW));
+
+  const url = URL.createObjectURL(new Blob([r.svg], { type: "image/svg+xml" }));
+  try {
+    const img = new Image();
+    await new Promise((res, rej) => {
+      img.onload = res;
+      img.onerror = () => rej(new Error("math svg decode failed"));
+      img.src = url;
+    });
+    const canvas = new OffscreenCanvas(pw, ph);
+    canvas.getContext("2d").drawImage(img, 0, 0, pw, ph);
+    const outBlob = await canvas.convertToBlob({ type: "image/png" });
+    return {
+      bytes: new Uint8Array(await outBlob.arrayBuffer()),
+      dims: {
+        cssWidth: cssW,
+        cssHeight: cssH,
+        widthEm: r.widthEx * EX_PER_EM,
+        heightEm: r.heightEx * EX_PER_EM,
+        verticalAlignEm: r.verticalAlignEx * EX_PER_EM,
+      },
+    };
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function xmlEscape(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 async function materializeImages(imageList) {
   const out = [];
   for (const img of imageList) {
     let bytes = null, mediaType = null;
+
+    // Math placeholders: render instead of fetching. A failed render leaves
+    // no entry, and the body rewrite degrades the formula to code text.
+    if (img.math) {
+      try {
+        const r = await renderMathToPng(img.math);
+        out.push({ provisionalHref: img.href, href: img.href, mediaType: "image/png", data: r.bytes, mathDims: r.dims });
+      } catch (e) {
+        console.error("clip-to-remarkable: math render failed", e);
+      }
+      continue;
+    }
 
     // Try each candidate URL in order until one fetches as a real image.
     for (const url of img.candidates || []) {
@@ -249,9 +332,32 @@ async function clipActiveTab(tab) {
 
   // Rewrite body refs: corrected href for kept images, remove the rest.
   const finalByProvisional = new Map(images.map((i) => [i.provisionalHref, i.href]));
+  const materializedByProvisional = new Map(images.map((i) => [i.provisionalHref, i]));
   let body = result.bodyXhtml;
   (result.images || []).forEach((i) => {
     const esc = i.href.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    if (i.math) {
+      // Rebuild the placeholder tag with final display dimensions (px attrs
+      // AND em inline style — whichever the device renderer honours wins),
+      // or degrade a failed render to code text (the pre-math behaviour).
+      const tagRe = new RegExp('<img[^>]*src="' + esc + '"[^>]*/?>', "g");
+      const fin = materializedByProvisional.get(i.href);
+      if (fin && fin.mathDims) {
+        const d = fin.mathDims;
+        const cls = i.math.display ? "math-display" : "math-inline";
+        const altAttr = i.alt ? ' alt="' + xmlEscape(i.alt) + '"' : "";
+        const style = "width:" + d.widthEm.toFixed(3) + "em;height:" + d.heightEm.toFixed(3) +
+          "em;vertical-align:" + d.verticalAlignEm.toFixed(3) + "em";
+        body = body.replace(tagRe,
+          '<img src="' + i.href + '"' + altAttr + ' class="' + cls + '" width="' + d.cssWidth +
+          '" height="' + d.cssHeight + '" style="' + style + '"/>');
+      } else {
+        body = body.replace(tagRe, i.alt ? "<code>" + xmlEscape(i.alt) + "</code>" : "");
+      }
+      return;
+    }
+
     if (finalByProvisional.has(i.href)) {
       body = body.replace(new RegExp(esc, "g"), finalByProvisional.get(i.href));
     } else {
@@ -310,7 +416,13 @@ async function clipActiveTab(tab) {
   }
 
   const url = URL.createObjectURL(new Blob([bytes], { type: "application/epub+zip" }));
-  await api.downloads.download({ url, filename: safe + ".epub", saveAs: false });
+  try {
+    await api.downloads.download({ url, filename: safe + ".epub", saveAs: false });
+  } finally {
+    // Give the download a moment to open the blob before releasing it; the
+    // event page can outlive this multi-MB object URL, notably on Android.
+    setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  }
 }
 
 api.action.onClicked.addListener((tab) => {

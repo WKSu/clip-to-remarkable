@@ -5,4 +5,7 @@ web-ext-artifacts/
 .DS_Store
 
 # copyrighted article fixtures (kept local)
-test/fixtures/
+test/fixtures/*
+# synthetic fixtures written for this repo are committable
+!test/fixtures/math-synthetic.htm
+!test/fixtures/zhihu-synthetic.htm

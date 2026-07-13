@@ -21,13 +21,20 @@ No analytics, no tracking, no remote code. data_collection_permissions is
 declared as "none".
 
 GENERATED CODE
-Only rmapi-bundle.js is generated (esbuild over the public npm package
-rmapi-js). Full source + exact build command provided in the source upload
-(see BUILD.md). Readability.js is the unmodified @mozilla/readability library.
+rmapi-bundle.js and mathjax-bundle.js are generated (esbuild over the public
+npm packages rmapi-js and mathjax-full respectively; mathjax-full renders
+TeX/MathML formulas to SVG so they can be rasterised into the EPUB — the
+reMarkable's reader cannot display math markup). Full source + exact build
+commands provided in the source upload (see BUILD.md). Readability.js is the
+unmodified @mozilla/readability library.
 
-ABOUT THE 4 LINTER WARNINGS (0 errors)
+ABOUT THE 6 LINTER WARNINGS (0 errors)
 - 2x UNSAFE_VAR_ASSIGNMENT in Readability.js: innerHTML usage inside Mozilla's
   own Readability library (unmodified), the same engine as Firefox Reader View.
 - 2x DANGEROUS_EVAL in rmapi-bundle.js: the string Function("return this")
   from core-js global detection, inlined in the published rmapi-js bundle.
   Guarded; never reached on Firefox; evaluates no dynamic input.
+- 2x UNSAFE_VAR_ASSIGNMENT in mathjax-bundle.js: innerHTML/outerHTML inside
+  MathJax's browser-DOM adaptor. The add-on only uses MathJax's LiteDOM
+  (string-based) adaptor, so these paths are never reached and MathJax output
+  is never inserted into a live document.

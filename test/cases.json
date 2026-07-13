@@ -2,6 +2,34 @@
   "_comment": "Ground-truth expected image counts per article. Drop the matching .htm file into test/fixtures/ (gitignored to avoid redistributing copyrighted article HTML) and run `npm test`. Add entries here to extend the suite.",
   "cases": [
     {
+      "file": "math-synthetic.htm",
+      "url": "https://example.com/math-article",
+      "_comment": "Committed synthetic fixture: KaTeX inline + display, MathJax v3 assistive MathML, MathJax v2 script pair, raw Wikipedia-style MathML. 5 math placeholders, no photos.",
+      "images": 5,
+      "math": 5
+    },
+    {
+      "file": "zhihu-synthetic.htm",
+      "url": "https://zhuanlan.zhihu.com/p/24709748",
+      "_comment": "Committed synthetic fixture (real page is behind an anti-bot wall): ztext-math wrappers hydrated/unhydrated/display + bare equation?tex img. Guards against the duplicated-TeX-text bug.",
+      "images": 4,
+      "math": 4
+    },
+    {
+      "file": "zhihu_real.htm",
+      "url": "https://zhuanlan.zhihu.com/p/24709748",
+      "_comment": "Real saved Zhihu page (unhydrated ztext-math spans: TeX as inner text + data-tex attr). 249 occurrences dedup to 195. Regression-guards the pass-2 fallback: TeX fallback text is 83% of the article, which used to trip the degradation guard and drop every marker.",
+      "images": 195,
+      "math": 195
+    },
+    {
+      "file": "tao-gilbreath.htm",
+      "url": "https://terrytao.wordpress.com/2026/07/11/gilbreaths-conjecture-a-cramer-random-model-and-a-deterministic-analysis/",
+      "_comment": "WordPress.com WP-LaTeX: 102 s0.wp.com/latex.php formula <img>s deduping to 49 unique (TeX from alt). Before math support, assetKey collapsed all of them to one image.",
+      "images": 49,
+      "math": 49
+    },
+    {
       "file": "India’s surprise baby bust is a warning to the world.htm",
       "url": "https://www.economist.com/leaders/2026/06/04/indias-surprise-baby-bust-is-a-warning-to-the-world",
       "images": 1

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A Short Tour of Rendered Mathematics — Synthetic Fixture</title>
+</head>
+<body>
+<main>
+<article>
+<h1>A Short Tour of Rendered Mathematics</h1>
+<p>This synthetic article exists to exercise the math-extraction pipeline. It contains
+the four flavours of rendered mathematics the extension detects: KaTeX inline and
+display markup, a MathJax version three container with assistive MathML, a MathJax
+version two script pair, and a raw MathML element in the style Wikipedia serves.
+Each paragraph carries enough prose for Readability to keep it in the article body.</p>
+
+<p>Einstein's mass–energy equivalence, written inline as
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo>=</mo><mi>m</mi><msup><mi>c</mi><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">E = mc^2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="mord mathnormal">E</span><span class="mrel">=</span><span class="mord mathnormal">m</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="mord">2</span></span></span></span></span></span>,
+is probably the most famous formula in physics. It appears here rendered by KaTeX
+so the extractor must recover the TeX source from the hidden annotation element
+rather than serialising the duplicated presentation markup as garbled text.</p>
+
+<p>The Gaussian integral is a classic display equation, and KaTeX wraps display
+mathematics in a dedicated container element that the extractor should replace
+as a single block-level image placeholder:</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><msubsup><mo>&#x222B;</mo><mn>0</mn><mi mathvariant="normal">&#x221E;</mi></msubsup><msup><mi>e</mi><mrow><mo>&#x2212;</mo><msup><mi>x</mi><mn>2</mn></msup></mrow></msup><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><msqrt><mi>&#x3C0;</mi></msqrt><mn>2</mn></mfrac></mrow><annotation encoding="application/x-tex">\int_0^\infty e^{-x^2}\,dx = \frac{\sqrt{\pi}}{2}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="mop">&#x222B;</span><span class="mord mathnormal">e</span><span class="mord mathnormal">d</span><span class="mord mathnormal">x</span><span class="mrel">=</span></span></span></span></span></p>
+
+<p>Sites that upgraded to MathJax version three emit custom elements. When the
+assistive MathML subtree is present, it is the most faithful machine-readable
+source available, so the extractor prefers it over the rendered output:</p>
+<p><mjx-container class="MathJax" jax="CHTML" display="true"><mjx-math class="MJX-TEX" aria-hidden="true"><mjx-mi class="mjx-i"><mjx-c class="mjx-c1D453"></mjx-c></mjx-mi></mjx-math><mjx-assistive-mml unselectable="on" display="block"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><munderover><mo>&#x2211;</mo><mrow><mi>n</mi><mo>=</mo><mn>0</mn></mrow><mi mathvariant="normal">&#x221E;</mi></munderover><mfrac><mrow><msup><mi>f</mi><mrow><mo stretchy="false">(</mo><mi>n</mi><mo stretchy="false">)</mo></mrow></msup><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo></mrow><mrow><mi>n</mi><mo>!</mo></mrow></mfrac><msup><mrow><mo stretchy="false">(</mo><mi>x</mi><mo>&#x2212;</mo><mi>a</mi><mo stretchy="false">)</mo></mrow><mi>n</mi></msup></mrow></math></mjx-assistive-mml></mjx-container></p>
+
+<p>Older installations still run MathJax version two, which leaves the original
+TeX in a sibling script element while the rendered span carries only visual
+markup. The Pythagorean theorem
+<span class="MathJax_Preview" style="color: inherit;"></span><span class="MathJax" id="MathJax-Element-1-Frame" tabindex="0"><span class="math" id="MathJax-Span-1"><span class="mrow"><span class="mi">a</span><span class="msup">2</span><span class="mo">+</span><span class="mi">b</span><span class="msup">2</span><span class="mo">=</span><span class="mi">c</span><span class="msup">2</span></span></span></span><script type="math/tex" id="MathJax-Element-1">a^2 + b^2 = c^2</script>
+appears here in exactly that arrangement, and the preview, rendered span, and
+script must all collapse into a single placeholder image.</p>
+
+<p>Finally, Wikipedia and arXiv HTML serve native MathML wrapped in a container
+span, sometimes with a hidden raster fallback image beside it. The golden ratio
+identity below uses that structure, and the whole wrapper should be replaced so
+no hidden fallback content leaks into the clipped article:</p>
+<p><span class="mwe-math-element"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block" alttext="\varphi = \frac{1+\sqrt{5}}{2}"><mrow><mi>&#x3C6;</mi><mo>=</mo><mfrac><mrow><mn>1</mn><mo>+</mo><msqrt><mn>5</mn></msqrt></mrow><mn>2</mn></mfrac></mrow></math></span></p>
+
+<p>That concludes the tour. If every formula above survives clipping as a properly
+sized raster image while none of the surrounding prose is lost or duplicated,
+the extraction pipeline is doing its job correctly, and readers on paper-like
+devices finally get formulas instead of runs of unformatted symbol soup.</p>
+</article>
+</main>
+</body>
+</html>

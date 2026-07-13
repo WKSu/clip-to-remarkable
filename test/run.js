@@ -24,7 +24,8 @@
  * { "file", "url", "images" } entry to test/cases.json.
  *
  * Fixtures are gitignored on purpose: they are copyrighted article pages, so
- * they live locally rather than in the public repo.
+ * they live locally rather than in the public repo. Synthetic fixtures written
+ * for this repo (math-synthetic.htm) are committed via .gitignore negations.
  */
 const fs = require("fs");
 const path = require("path");
@@ -74,6 +75,7 @@ function withCorrectExt(href, mediaType) {
 // Infer a media type from a candidate URL the way materializeImages would
 // (without the network). Good enough to exercise the href-rewrite logic.
 function mediaTypeFor(img) {
+  if (img.math) return "image/png"; // math is rendered to PNG in background.js
   const u = (img.candidates && img.candidates[0]) || img.dataUrl || "";
   if (u.indexOf("data:image/") === 0) return u.slice(5).split(";")[0] || "image/jpeg";
   const m = /\.([a-z0-9]{2,4})(?:[?#&]|$)/i.exec(u);
@@ -171,6 +173,14 @@ async function pipelineCheck(r) {
       const urls = r.images.map((i) => (i.candidates[0] || i.dataUrl || "")).join(" ");
       for (const need of (c.requireAssets || [])) if (!urls.includes(need)) { ok = false; note += ` missing:${need}`; }
       for (const bad of (c.forbidAssets || [])) if (urls.includes(bad)) { ok = false; note += ` forbidden:${bad}`; }
+
+      // Math extraction: expected placeholder count, and no renderer markup
+      // (KaTeX / MathJax residue) leaking into the body as garbled text.
+      if (c.math !== undefined) {
+        const gotMath = r.images.filter((i) => i.math).length;
+        if (gotMath !== c.math) { ok = false; note += ` math(got=${gotMath} expected=${c.math})`; }
+        if (/<mjx-|<math|<annotation|katex-|math\/tex|MathJax_|mwe-math|latex\.php|equation\?tex|ztext-math/i.test(r.bodyXhtml)) { ok = false; note += " math-residue"; }
+      }
 
       // Downstream guard: every extracted image must survive into the EPUB.
       const p = await pipelineCheck(r);
